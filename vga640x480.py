@@ -5,12 +5,12 @@ from myhdl import *
 LOW, HIGH = bool(0), bool(1)
 
 
-def vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen, hcounter, vcounter):
+def vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen, hcounter_external, vcounter_external):
 
 	# local data
-# total resolution = 800 * 521 (640x480 visible) @ 25 Mhz = 60 Hz
-	hcounter_tmp = Signal(intbv(0,min=0, max=800))
-	vcounter_tmp = Signal(intbv(0,min=0, max=521))
+	# total resolution = 800 * 521 (640x480 visible) @ 25 Mhz = 60 Hz
+	hcounter_internal = Signal(intbv(0,min=0, max=800)[10:])
+	vcounter_internal = Signal(intbv(0,min=0, max=521)[10:])
 	
 
 
@@ -27,66 +27,65 @@ def vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen,
 
 
 	# combinatory logic
-	#@always(hcounter_tmp.posedge,vcounter_tmp.posedge)
 	@always_comb
 	def assign():
 
-		nonlocal hcounter_tmp
-		nonlocal vcounter_tmp
-
-		if (hcounter_tmp < 96):
+		if (hcounter_internal < 96):
 			vga_hs.next = 1
+# DEBUG
 			print("1")
 		else:
 			vga_hs.next = 0
+# DEBUG
 			print("0")
 
-		if (vcounter_tmp < 2):
+		if (vcounter_internal < 2):
 			vga_vs.next = 1
 		else:
 			vga_vs.next = 0
 
-		if ((hcounter_tmp >= 144) and (hcounter_tmp < 784) and (vcounter_tmp >= 31) and (vcounter_tmp < 510)):
+		if ((hcounter_internal >= 144) and (hcounter_internal < 784) and (vcounter_internal >= 31) and (vcounter_internal < 510)):
 			vga_videoon.next = 1
 		else:
 			vga_videoon.next = 0
 
 		# copy counters to output
-		if (hcounter_tmp >= 144):
-			hcounter.next = hcounter_tmp-144
+		if (hcounter_internal >= 144):
+			hcounter_external.next = hcounter_internal-144
 		else:
-			hcounter.next = 0
+			hcounter_external.next = 0
 
-		if (vcounter_tmp >= 144):
-			vcounter.next = vcounter_tmp-144
+		if (vcounter_internal >= 144):
+			vcounter_external.next = vcounter_internal-144
 		else:
-			vcounter.next = 0
+			vcounter_external.next = 0
 
 
 	# clock driven logic
 	@always(clk25MhzPulse.posedge, reset.posedge)
 	def Clock25Mhz():
 
-		nonlocal hcounter_tmp
-		nonlocal vcounter_tmp
+		nonlocal hcounter_internal
+		nonlocal vcounter_internal
 
-#		print("hcounter = "+str(hcounter_tmp))
-#		print("vcounter = "+str(vcounter_tmp))
+# DEBUG
+		print("hcounter = "+str(hcounter_internal))
+		print("vcounter = "+str(vcounter_internal))
 
 		if reset == 1:
-			hcounter_tmp = 0
-			vcounter_tmp = 0
+			hcounter_internal = 0
+			vcounter_internal = 0
 		else:
-			if hcounter_tmp != 799:
-				hcounter_tmp = hcounter_tmp + 1
+			if hcounter_internal != 799:
+				hcounter_internal += 1
 			else:
 				# end of horizontal line
-				hcounter_tmp = 0
+				hcounter_internal = 0
 
-				if vcounter_tmp != 520:
-					vcounter_tmp = vcounter_tmp + 1
+				if vcounter_internal != 520:
+					vcounter_internal += 1
 				else:
-					vcounter_tmp = 0
+					vcounter_internal = 0
 			# end horizontal and vertical counters	
 		# end else (not reset)
 	
@@ -103,11 +102,11 @@ def test_vga640x480():
 
 	# local vars
 	clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen = [Signal(bool(0)) for i in range(6)]
-	hcounter = Signal(intbv(0,min=0, max=800))
-	vcounter = Signal(intbv(0,min=0, max=521))
+	hcounter_external = Signal(intbv(0,min=0, max=800)[10:])
+	vcounter_external = Signal(intbv(0,min=0, max=521)[10:])
 
 
-	vga640x480_inst= vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen, hcounter, vcounter)
+	vga640x480_inst= vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen, hcounter_external, vcounter_external)
 
 	@always(delay(10))
 	def clkgen():
@@ -133,4 +132,5 @@ def simulate(timesteps):
 	sim.run(timesteps)
 
 simulate(2000000)
+
 
