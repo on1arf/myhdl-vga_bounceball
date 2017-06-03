@@ -69,8 +69,8 @@ def vga640x480 (clk25MhzPulse, reset, vga_hs,vga_vs, vga_videoon, vga_offscreen,
 		nonlocal vcounter_internal
 
 # DEBUG
-		print("hcounter = "+str(hcounter_internal))
-		print("vcounter = "+str(vcounter_internal))
+#		print("hcounter = "+str(hcounter_internal))
+#		print("vcounter = "+str(vcounter_internal))
 
 		if reset == 1:
 			hcounter_internal = 0
